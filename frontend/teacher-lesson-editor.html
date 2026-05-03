@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <!-- Отключаем Vite HMR и клиент полностью -->
+  <meta name="vite:client" content="disabled">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Редактирование урока - ProtoG</title>
+  
+  <link rel="stylesheet" href="/style.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/suneditor@2.46.0/dist/css/suneditor.min.css">
+
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background: #0a0a0a;
+      color: white;
+      font-family: system-ui, sans-serif;
+    }
+    .editor-wrapper {
+      max-width: 1200px;
+      margin: 20px auto;
+      padding: 20px;
+    }
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      padding-bottom: 15px;
+      border-bottom: 1px solid #334155;
+    }
+    #suneditor-container {
+      border: 2px solid #475569;
+      background: white;
+      min-height: 700px;
+    }
+    .btn {
+      padding: 12px 24px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 1.05rem;
+    }
+    .btn-secondary { background: #64748b; color: white; }
+    .btn-primary { background: #22c55e; color: #111827; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <div class="editor-wrapper">
+    <div class="header">
+      <h1>Редактирование урока: <span id="lesson-title">Загрузка...</span></h1>
+      <div>
+        <button onclick="goBack()" class="btn btn-secondary">← Назад</button>
+        <button onclick="saveContent()" class="btn btn-primary">💾 Сохранить</button>
+      </div>
+    </div>
+
+    <div id="suneditor-container"></div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/suneditor@2.46.0/dist/suneditor.min.js"></script>
+  <script>
+    let editor = null;
+    let lessonId = null;
+
+    function getLessonId() {
+      const params = new URLSearchParams(window.location.search);
+      return params.get('id');
+    }
+
+    async function initEditor() {
+      lessonId = getLessonId();
+      if (!lessonId) {
+        alert('ID урока не указан в URL');
+        return;
+      }
+
+      // Загружаем название урока
+      try {
+        const token = localStorage.getItem('token');
+        const res = await fetch('/api/teacher/lessons', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (res.ok) {
+          const lessons = await res.json();
+          const lesson = lessons.find(l => String(l.id) === lessonId);
+          if (lesson) {
+            document.getElementById('lesson-title').textContent = lesson.title;
+          }
+        }
+      } catch (e) {
+        console.error(e);
+      }
+
+      // Инициализация SunEditor
+      editor = SUNEDITOR.create('suneditor-container', {
+        width: '100%',
+        height: '720px',
+        minHeight: '500px',
+        buttonList: [
+          ['undo', 'redo'],
+          ['formatBlock', 'font', 'fontSize'],
+          ['bold', 'underline', 'italic', 'strike'],
+          ['align', 'list', 'table'],
+          ['image', 'video'],
+          ['link', 'codeView', 'fullScreen']
+        ]
+      });
+
+      // Загрузка существующего контента
+      try {
+        const res = await fetch(`/content/lessons/${lessonId}.html`);
+        if (res.ok) {
+          const html = await res.text();
+          editor.setContents(html);
+        } else {
+          editor.setContents(`<h2>${document.getElementById('lesson-title').textContent || 'Урок'}</h2><p>Начните писать материал урока здесь...</p>`);
+        }
+      } catch (e) {
+        editor.setContents(`<h2>Урок</h2><p>Начните писать материал здесь...</p>`);
+      }
+    }
+
+    async function saveContent() {
+      if (!editor || !lessonId) return;
+
+      const content = editor.getContents(false);
+      const token = localStorage.getItem('token');
+
+      try {
+        const res = await fetch(`/api/teacher/lessons/${lessonId}/content`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ content })
+        });
+
+        if (res.ok) {
+          alert('✅ Контент успешно сохранён!');
+        } else {
+          alert('Ошибка при сохранении');
+        }
+      } catch (err) {
+        alert('Ошибка соединения с сервером');
+      }
+    }
+
+    function goBack() {
+      window.location.href = '/teacher-courses.html';
+    }
+
+    // Запуск
+    window.onload = initEditor;
+  </script>
+</body>
+</html>

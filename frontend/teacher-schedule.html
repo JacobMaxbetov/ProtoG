@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Расписание — ProtoG</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <style>
+    body { 
+      font-family: Arial, sans-serif; 
+      background: #0f172a; 
+      color: white; 
+      padding: 20px; 
+      margin: 0;
+    }
+    .container { max-width: 1100px; margin: 0 auto; }
+    .header { 
+      display: flex; 
+      justify-content: space-between; 
+      align-items: center; 
+      margin-bottom: 30px; 
+      padding-bottom: 20px;
+      border-bottom: 1px solid #334155;
+    }
+    .btn { 
+      padding: 12px 24px; 
+      background: #22c55e; 
+      color: black; 
+      border: none; 
+      border-radius: 8px; 
+      cursor: pointer; 
+      font-weight: bold;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .btn:hover { background: #86efac; }
+
+    .event-card { 
+      background: #1e2937; 
+      padding: 20px; 
+      border-radius: 12px; 
+      margin-bottom: 15px;
+      display: flex;
+      gap: 25px;
+      align-items: center;
+    }
+    .datetime {
+      min-width: 120px;
+      text-align: center;
+      background: #334155;
+      padding: 12px;
+      border-radius: 8px;
+    }
+    .date { font-size: 1.1rem; color: #60a5fa; }
+    .time { font-size: 1.7rem; font-weight: bold; margin-top: 4px; }
+    .type-badge {
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 0.95rem;
+      font-weight: 500;
+    }
+    .stream { background: #22c55e; color: black; }
+    .webinar { background: #a855f7; color: white; }
+    .lesson { background: #eab308; color: black; }
+
+    .modal {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.85);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+    .modal-content {
+      background: #1e2937;
+      padding: 30px;
+      border-radius: 12px;
+      width: 90%;
+      max-width: 480px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>📅 Расписание занятий</h1>
+      <button class="btn" id="createBtn">
+        <i class="fas fa-plus"></i> Новое занятие
+      </button>
+    </div>
+
+    <div id="events"></div>
+  </div>
+
+<!-- Модалка -->
+<div id="modal" class="modal">
+  <div class="modal-content">
+    <h2 id="modalTitle">Создать новое занятие</h2>
+    
+    <input id="eventId" type="hidden" /> <!-- для редактирования -->
+    
+    <input id="title" type="text" placeholder="Название занятия" 
+           style="width:100%; padding:12px; margin:10px 0; background:#334155; border:none; color:white; border-radius:6px;" />
+    
+    <select id="event_type" style="width:100%; padding:12px; margin:10px 0; background:#334155; border:none; color:white; border-radius:6px;">
+      <option value="stream">📺 Стрим</option>
+      <option value="webinar">🎤 Вебинар</option>
+      <option value="lesson">📖 Дополнительный урок</option>
+    </select>
+
+    <input id="start_time" type="datetime-local" 
+           style="width:100%; padding:12px; margin:10px 0; background:#334155; border:none; color:white; border-radius:6px;" />
+
+    <div style="margin-top:25px; text-align:right;">
+      <button onclick="closeModal()" style="margin-right:12px; padding:10px 20px; background:#64748b; border:none; color:white; border-radius:6px;">Отмена</button>
+      <button id="saveBtn" class="btn">Создать</button>
+    </div>
+  </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+<script>
+    const token = localStorage.getItem('token');
+    let isEditMode = false;
+    let editId = null;
+
+    // DOM элементы
+    const modal = document.getElementById('modal');
+    const modalTitle = document.getElementById('modalTitle');
+    const eventIdInput = document.getElementById('eventId');
+    const titleInput = document.getElementById('title');
+    const typeSelect = document.getElementById('event_type');
+    const timeInput = document.getElementById('start_time');
+    const saveBtn = document.getElementById('saveBtn');
+
+    function openCreateModal() {
+        isEditMode = false;
+        editId = null;
+        modalTitle.textContent = 'Создать новое занятие';
+        saveBtn.textContent = 'Создать';
+        eventIdInput.value = '';
+        titleInput.value = '';
+        typeSelect.value = 'stream';
+        timeInput.value = '';
+        modal.style.display = 'flex';
+    }
+
+    function openEditModal(event) {
+        isEditMode = true;
+        editId = event.id;
+        modalTitle.textContent = 'Редактировать занятие';
+        saveBtn.textContent = 'Сохранить';
+
+        eventIdInput.value = event.id;
+        titleInput.value = event.title;
+        typeSelect.value = event.event_type || 'stream';
+        timeInput.value = event.start_time.slice(0, 16); // datetime-local формат
+
+        modal.style.display = 'flex';
+    }
+
+    function closeModal() {
+        modal.style.display = 'none';
+    }
+
+    async function saveEvent() {
+        const title = titleInput.value.trim();
+        const event_type = typeSelect.value;
+        const start_time = timeInput.value;
+
+        if (!title || !start_time) {
+            alert("Заполните название и время!");
+            return;
+        }
+
+        try {
+            if (isEditMode) {
+                // Редактирование
+                await axios.put(`/api/teacher/schedule/${editId}`, {
+                    title,
+                    event_type,
+                    start_time: start_time + ':00'
+                }, { headers: { Authorization: `Bearer ${token}` } });
+                alert('✅ Изменения сохранены!');
+            } else {
+                // Создание
+                await axios.post('/api/teacher/schedule', {
+                    title,
+                    event_type,
+                    start_time: start_time + ':00'
+                }, { headers: { Authorization: `Bearer ${token}` } });
+                alert('✅ Занятие создано!');
+            }
+
+            closeModal();
+            loadSchedule();
+        } catch (err) {
+            console.error(err);
+            alert('Ошибка: ' + (err.response?.data?.message || err.message));
+        }
+    }
+
+    // Загрузка расписания (с кнопками)
+    async function loadSchedule() {
+        try {
+            const res = await axios.get('/api/teacher/schedule', {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+
+            const container = document.getElementById('events');
+            if (!res.data || res.data.length === 0) {
+                container.innerHTML = '<p style="text-align:center; color:#94a3b8; padding:80px; font-size:1.3rem;">Пока нет запланированных занятий</p>';
+                return;
+            }
+
+            let html = '';
+            res.data.forEach(event => {
+                const date = new Date(event.start_time);
+                html += `
+                    <div class="event-card">
+                        <div class="datetime">
+                            <div class="date">${date.toLocaleDateString('ru-RU', {weekday:'short', day:'numeric', month:'short'})}</div>
+                            <div class="time">${date.toLocaleTimeString('ru-RU', {hour:'2-digit', minute:'2-digit'})}</div>
+                        </div>
+                        <div style="flex:1">
+                            <h3>${event.title}</h3>
+                            ${event.course_title ? `<p><strong>Курс:</strong> ${event.course_title}</p>` : ''}
+                            <span class="type-badge ${event.event_type}">${getTypeLabel(event.event_type)}</span>
+                        </div>
+                        <div style="display:flex; flex-direction:column; gap:8px;">
+                            <button class="edit-btn" data-id="${event.id}" style="padding:8px 16px; background:#3b82f6;">✏️</button>
+                            <button class="delete-btn" data-id="${event.id}" style="padding:8px 16px; background:#ef4444;">🗑</button>
+                        </div>
+                    </div>`;
+            });
+            container.innerHTML = html;
+
+            attachButtons();
+        } catch (err) {
+            console.error(err);
+            document.getElementById('events').innerHTML = `<p style="color:#ef4444">Ошибка загрузки</p>`;
+        }
+    }
+
+    function getTypeLabel(type) {
+        const map = { stream: '📺 Стрим', webinar: '🎤 Вебинар', lesson: '📖 Урок' };
+        return map[type] || type;
+    }
+
+    function attachButtons() {
+        document.querySelectorAll('.edit-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const id = parseInt(btn.dataset.id);
+                const event = /* можно получить из data, но проще перезагрузить или хранить */ 
+                // Пока упрощённо — загружаем все и ищем
+                axios.get('/api/teacher/schedule', { headers: { Authorization: `Bearer ${token}` } })
+                    .then(res => {
+                        const event = res.data.find(e => e.id === id);
+                        if (event) openEditModal(event);
+                    });
+            });
+        });
+
+        document.querySelectorAll('.delete-btn').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                if (!confirm('Удалить занятие?')) return;
+                try {
+                    await axios.delete(`/api/teacher/schedule/${btn.dataset.id}`, {
+                        headers: { Authorization: `Bearer ${token}` }
+                    });
+                    loadSchedule();
+                } catch (err) {
+                    alert('Ошибка удаления');
+                }
+            });
+        });
+    }
+
+    // Инициализация
+    document.getElementById('createBtn').addEventListener('click', openCreateModal);
+    saveBtn.addEventListener('click', saveEvent);
+    modal.addEventListener('click', e => { if (e.target === modal) closeModal(); });
+
+    window.onload = loadSchedule;
+</script>
+</body>
+</html> 

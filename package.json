@@ -1,0 +1,26 @@
+{
+  "name": "protog",
+  "version": "1.0.0",
+  "description": "ProtoG — платформа по продаже курсов",
+  "scripts": {
+    "dev": "concurrently \"npm run server\" \"npm run client\"",
+    "server": "cd backend && npm run dev",
+    "client": "cd frontend && npm run dev",
+    "content": "cd frontend && node content/server.js",
+    "build": "cd frontend && npm run build",
+    "preview": "cd frontend && npm run preview",
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "@vitejs/plugin-vue": "^6.0.6",
+    "concurrently": "^8.2.2",
+    "crypto": "^1.0.1",
+    "dotenv": "^17.4.2",
+    "peer": "^1.0.2",
+    "socket.io": "^4.8.3",
+    "yookassa": "^0.1.1"
+  },
+  "devDependencies": {
+    "serve": "^14.2.6"
+  }
+}

@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>ProtoG — Курсы по программированию</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+</head>
+<script type="module">
+  window.CONFIG = {
+    frontendUrl: import.meta.env?.VITE_FRONTEND_URL || window.location.origin,
+    apiUrl: import.meta.env?.VITE_API_URL || '/api',
+    pythonServerUrl: import.meta.env?.VITE_PYTHON_SERVER_URL || 'https://wonderingly-liberated-whiting.cloudpub.ru'
+  };
+  console.log('CONFIG загружен:', window.CONFIG);
+</script>
+<style>
+    /* Дополнительные стили для мобильной адаптации */
+    @media (max-width: 768px) {
+      .balance-card {
+        flex-direction: column;
+        gap: 12px;
+        align-items: stretch;
+      }
+      
+      #deposit-btn {
+        padding: 14px 20px;
+        font-size: 1rem;
+      }
+
+      /* Компактный режим для кнопки "Пополнить" */
+      #deposit-btn span {
+        display: none;
+      }
+
+      #deposit-btn i {
+        font-size: 1.35rem;
+      }
+    }
+  </style>
+<body>
+  <header>
+    <div class="container">
+      <div class="logo">
+        <span class="logo-code">&lt;</span>ProtoG<span class="logo-code">&gt;</span>
+      </div>
+      <nav id="main-nav">
+        <a href="#" id="nav-home">Главная</a>
+        <button id="nav-dashboard" class="nav-btn hidden">Личный кабинет</button>
+        <button id="login-btn" class="nav-btn">Войти</button>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Главная страница -->
+  <main id="main-page">
+    <section class="hero">
+      <div class="container">
+        <div class="hero-content">
+          <h1>Стань <span class="highlight">профессиональным</span><br>программистом</h1>
+          <p class="subtitle">Качественные практические курсы по веб-разработке, Python, JavaScript и современным технологиям</p>
+          <button id="browse-courses" class="btn-primary">
+            <i class="fas fa-rocket"></i> Смотреть курсы
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <section class="courses" id="courses-section">
+      <div class="container">
+        <h2>Доступные курсы</h2>
+        <div class="courses-grid" id="courses-grid"></div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Личный кабинет -->
+  <section id="dashboard-page" class="dashboard hidden">
+    <div class="container">
+      <div class="dashboard-header">
+        <div>
+          <h1>Личный кабинет</h1>
+          <p id="welcome-text">Добро пожаловать!</p>
+        </div>
+
+      <!-- Блок баланса -->
+        <div class="balance-card">
+          <div class="balance-info">
+            <span class="balance-label">Баланс</span>
+            <div class="balance-amount" id="user-balance">0 ₽</div>
+          </div>
+          <button id="deposit-btn" class="btn-primary">
+            <i class="fas fa-plus"></i>
+            <span>Пополнить</span>
+          </button>
+        </div>
+      
+        <button id="logout-btn" class="btn-secondary">Выйти</button>
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-card">
+          <i class="fas fa-book"></i>
+          <h3>Куплено курсов</h3>
+          <div class="stat-number" id="stat-courses">0</div>
+        </div>
+        <div class="stat-card">
+          <i class="fas fa-play-circle"></i>
+          <h3>Пройдено уроков</h3>
+          <div class="stat-number" id="stat-lessons">0</div>
+        </div>
+        <div class="stat-card">
+          <i class="fas fa-chart-line"></i>
+          <h3>Общий прогресс</h3>
+          <div class="stat-number" id="stat-progress">0%</div>
+        </div>
+      </div>
+
+      <h2>Мои курсы</h2>
+      <div class="courses-grid" id="my-courses-grid">
+        <!-- Динамически загружаются купленные курсы -->
+      </div>
+
+      <h2 style="margin-top: 3rem;">Расписание занятий</h2>
+      <div id="schedule-container" class="schedule-card">
+        <p>Загрузка расписания...</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Модальное окно авторизации -->
+  <div id="auth-modal" class="modal">
+    <div class="modal-content">
+      <span class="close-btn" id="close-modal">&times;</span>
+      
+      <div class="auth-tabs">
+        <button class="tab-btn active" data-tab="login">Вход</button>
+        <button class="tab-btn" data-tab="register">Регистрация</button>
+      </div>
+
+      <div id="login-form" class="auth-form">
+        <h2>Вход в аккаунт</h2>
+        <input type="email" id="login-email" placeholder="Email" required>
+        <input type="password" id="login-password" placeholder="Пароль" required>
+        <button id="login-submit" class="btn-primary full-width">Войти</button>
+        <p class="switch-text">Нет аккаунта? <span class="link" data-tab="register">Зарегистрироваться</span></p>
+      </div>
+
+      <div id="register-form" class="auth-form hidden">
+        <h2>Создать аккаунт</h2>
+        <input type="text" id="reg-name" placeholder="Имя" required>
+        <input type="email" id="reg-email" placeholder="Email" required>
+        <input type="password" id="reg-password" placeholder="Пароль" required>
+        <button id="register-submit" class="btn-primary full-width">Зарегистрироваться</button>
+        <p class="switch-text">Уже есть аккаунт? <span class="link" data-tab="login">Войти</span></p>
+      </div>
+    </div>
+  </div>
+  <!-- Модальное окно пополнения баланса -->
+<div id="deposit-modal" class="modal">
+  <div class="modal-content">
+    <span class="close-btn" id="close-deposit-modal">&times;</span>
+    
+    <h2>Пополнение баланса</h2>
+    <p class="modal-subtitle">Введите сумму пополнения (минимум 10 ₽)</p>
+    
+    <div class="amount-input-group">
+      <span class="currency">₽</span>
+      <input type="number" id="deposit-amount" placeholder="1000" min="10" value="1000">
+    </div>
+    
+    <div class="quick-amounts">
+      <button class="quick-btn" data-amount="100">100 ₽</button>
+      <button class="quick-btn" data-amount="500">500 ₽</button>
+      <button class="quick-btn active" data-amount="1000">1000 ₽</button>
+      <button class="quick-btn" data-amount="3000">3000 ₽</button>
+    </div>
+
+    <button id="create-deposit-btn" class="btn-primary">
+      Перейти к оплате
+    </button>
+  </div>
+</div>
+
+  <footer>
+    <div class="container">
+      <p>2026 ProtoG</p>
+    </div>
+  </footer>
+
+  <script type="module" src="/main.js"></script>
+</body>
+</html>

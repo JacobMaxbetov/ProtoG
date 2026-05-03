@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Урок #{{ lesson_id }} — ProtoG</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <script>
+    const CONFIG = {
+        frontendUrl: "{{ frontend_url }}",
+        apiUrl: "{{ api_url }}"
+    };
+    </script>
+  <style>
+    :root {
+      --primary: #22c55e;
+      --bg: #0f172a;
+      --card: #1e2937;
+      --text: #e2e8f0;
+      --text-light: #94a3b8;
+    }
+
+    * { box-sizing: border-box; margin:0; padding:0; }
+    
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      line-height: 1.6;
+    }
+
+    .lesson-container { min-height: 100vh; display: flex; flex-direction: column; }
+
+    /* Header */
+    .lesson-header {
+      background: rgba(30, 41, 55, 0.97);
+      backdrop-filter: blur(12px);
+      padding: 1rem 0;
+      border-bottom: 1px solid #334155;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+
+    .header-content {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .back-link {
+      color: var(--text-light);
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-weight: 500;
+    }
+
+    .lesson-title {
+      font-size: 1.3rem;
+      font-weight: 700;
+    }
+
+    /* Content */
+    .lesson-content {
+      flex: 1;
+      padding: 1.5rem 1rem;
+    }
+
+    .content-wrapper {
+      max-width: 1100px;
+      margin: 0 auto;
+      background: var(--card);
+      border-radius: 16px;
+      padding: 2rem;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+      border: 1px solid #334155;
+    }
+
+    /* Footer */
+    .lesson-footer {
+      background: rgba(30, 41, 55, 0.98);
+      backdrop-filter: blur(12px);
+      border-top: 1px solid #334155;
+      padding: 0.9rem 0.75rem;
+      position: sticky;
+      bottom: 0;
+      z-index: 50;
+    }
+
+    .footer-content {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .nav-btn {
+      padding: 13px 16px;
+      background: #334155;
+      color: white;
+      border: none;
+      border-radius: 12px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: all 0.2s;
+      flex: 1;
+    }
+
+    .nav-btn:hover { background: #475569; }
+
+    .done-btn {
+      padding: 13px 20px;
+      background: var(--primary);
+      color: #111827;
+      font-weight: 700;
+      border: none;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      flex: 1.1;
+      transition: all 0.3s;
+    }
+
+    .done-btn:hover {
+      background: #16a34a;
+      transform: translateY(-1px);
+    }
+
+    .close-btn { background: #475569; }
+
+    /* Мобильная версия — компактные стрелки */
+    @media (max-width: 768px) {
+      .content-wrapper { padding: 1.75rem 1.25rem; }
+      
+      .footer-content {
+        gap: 6px;
+      }
+
+      .nav-btn {
+        font-size: 0.95rem;
+        padding: 14px 12px;
+      }
+
+      /* На мобильных оставляем только эмодзи/иконки у навигации */
+      .nav-btn span {
+        display: none;
+      }
+
+      .nav-btn i {
+        font-size: 1.25rem;
+      }
+
+      .done-btn span,
+      .close-btn span {
+        display: inline;
+      }
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(15px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .content-wrapper { animation: fadeIn 0.4s ease forwards; }
+  </style>
+</head>
+<body>
+  <div class="lesson-container">
+    <header class="lesson-header">
+      <div class="header-content">
+        <a href="/" class="back-link">
+          ← Назад к курсам
+        </a>
+        <h1 class="lesson-title"></h1>
+        <div></div>
+      </div>
+    </header>
+
+    <main class="lesson-content">
+      <div class="content-wrapper" id="lesson-content">
+        <div style="text-align:center; padding: 4rem 1rem; color:#64748b;">
+          <i class="fas fa-spinner fa-spin fa-2x"></i>
+          <p style="margin-top:1rem;">Загрузка материала...</p>
+        </div>
+      </div>
+    </main>
+
+    <footer class="lesson-footer">
+      <div class="footer-content">
+        <button onclick="prevLesson()" class="nav-btn">
+          <i class="fas fa-chevron-left"></i>
+          <span>Назад</span>
+        </button>
+        
+        <button onclick="closeLesson()" class="nav-btn close-btn">
+          <i class="fas fa-times"></i>
+          <span>Закрыть</span>
+        </button>
+        
+        <button onclick="markDone()" id="done-btn" class="done-btn">
+          <i class="fas fa-check"></i>
+          <span>Пройдено</span>
+        </button>
+        
+        <button onclick="nextLesson()" class="nav-btn">
+          <span>Вперёд</span>
+          <i class="fas fa-chevron-right"></i>
+        </button>
+      </div>
+    </footer>
+  </div>
+
+
+<script>
+    const lessonId = {{ lesson_id }};
+    
+    // Получаем токен
+    let token = localStorage.getItem('token');
+    const urlParams = new URLSearchParams(window.location.search);
+    if (!token) token = urlParams.get('token');
+
+    console.log('Token present:', !!token);
+
+    // === ЕСЛИ ТОКЕНА НЕТ — РЕДИРЕКТ НА ЛОГИН ===
+    if (!token) {
+        alert("Для просмотра урока нужно войти в аккаунт");
+        window.location.href = CONFIG.frontendUrl; // ← твой фронтенд
+        // Можно добавить возврат обратно:
+        // window.location.href = `${CONFIG.frontendUrl}?redirect=/lesson/${lessonId}`;
+    }
+
+    // Загрузка материала урока
+    fetch(`/content/lessons/${lessonId}.html?token=${encodeURIComponent(token)}`)
+      .then(r => {
+        if (!r.ok) throw new Error('Unauthorized');
+        return r.text();
+      })
+      .then(html => {
+        document.getElementById('lesson-content').innerHTML = html;
+      })
+      .catch(() => {
+        document.getElementById('lesson-content').innerHTML = `<h2>Урок ${lessonId}</h2><p>Нет доступа или материал не добавлен.</p>`;
+      });
+
+async function markDone() {
+    const btn = document.querySelector('.done-btn');
+    const token = new URLSearchParams(window.location.search).get('token') || localStorage.getItem('token');
+
+    if (!token) {
+        alert("Авторизуйтесь");
+        return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = "Сохранение...";
+
+    try {
+        const apiBase = CONFIG.apiUrl.replace(/\/+$/, '');
+        const res = await fetch(`${apiBase}/api/progress/mark`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ lesson_id: lessonId })
+        });
+
+        const text = await res.text();
+        let data = {};
+        try {
+            data = text ? JSON.parse(text) : {};
+        } catch (parseErr) {
+            console.warn('markDone: response is not JSON', parseErr, text);
+        }
+
+        if (res.ok) {
+            btn.innerHTML = '✅ Пройдено!';
+            btn.style.background = '#16a34a';
+        } else {
+            alert(data.message || "Не удалось сохранить");
+            btn.disabled = false;
+            btn.textContent = '✓ Пройдено';
+        }
+    } catch (err) {
+        console.error(err);
+        alert("Ошибка соединения");
+        btn.disabled = false;
+        btn.textContent = '✓ Пройдено';
+    }
+}
+
+    function nextLesson() {
+        window.location.href = `/lesson/${lessonId + 1}?token=${encodeURIComponent(token)}`;
+    }
+    function prevLesson() {
+        window.location.href = `/lesson/${Math.max(1, lessonId - 1)}?token=${encodeURIComponent(token)}`;
+    }
+    function closeLesson() {
+      window.location.href = CONFIG.frontendUrl;
+    }
+
+</script>
+</body>
+</html>

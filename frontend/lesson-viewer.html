@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Просмотр урока — ProtoG</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <script>
+    const CONFIG = {
+        frontendUrl: import.meta.env?.VITE_FRONTEND_URL,
+        apiUrl: import.meta.env?.VITE_API_URL
+    };
+    </script>
+</head>
+<body style="background:#0f172a; color:#e2e8f0; margin:0; font-family:system-ui;">
+  <div style="min-height:100vh; display:flex; flex-direction:column;">
+    <header style="background:#1e2937; padding:1rem 0; border-bottom:1px solid #334155;">
+      <div style="max-width:1100px; margin:0 auto; padding:0 1rem;">
+        <button onclick="history.back()" style="background:none;border:none;color:#94a3b8;font-size:1.1rem;cursor:pointer;">
+          ← Назад
+        </button>
+        <h1 id="title" style="margin:10px 0 5px;">Загрузка...</h1>
+      </div>
+    </header>
+
+    <main style="flex:1; padding:2rem 0;">
+      <div style="max-width:1100px; margin:0 auto; padding:0 1rem;">
+        <div id="content" style="background:#1e2937; border-radius:12px; padding:2.5rem; min-height:60vh;">
+          Загрузка материала...
+        </div>
+      </div>
+    </main>
+
+    <footer style="background:#1e2937; padding:1.5rem 0; border-top:1px solid #334155;">
+      <div style="max-width:1100px; margin:0 auto; padding:0 1rem; display:flex; justify-content:space-between;">
+        <button onclick="alert('Предыдущий урок')" style="padding:12px 24px;background:#334155;color:white;border:none;border-radius:8px;">← Предыдущий</button>
+        <button onclick="alert('Урок пройден!')" style="padding:12px 32px;background:#22c55e;color:#111827;font-weight:bold;border:none;border-radius:8px;">✓ Пройдено</button>
+        <button onclick="alert('Следующий урок')" style="padding:12px 24px;background:#334155;color:white;border:none;border-radius:8px;">Следующий →</button>
+      </div>
+    </footer>
+  </div>
+
+  <script>
+    const id = new URLSearchParams(location.search).get('id');
+    document.getElementById('title').textContent = `Урок #${id || '?'}`;
+
+    fetch(`/content/lessons/${id}.html`)
+      .then(r => r.ok ? r.text() : Promise.reject())
+      .then(html => document.getElementById('content').innerHTML = html)
+      .catch(() => {
+        document.getElementById('content').innerHTML = `<h2>Урок ${id}</h2><p>Контент урока не найден (проверь /content/lessons/${id}.html)</p>`;
+      });
+  </script>
+</body>
+</html>
